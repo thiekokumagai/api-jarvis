@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import { ConversationsService } from '../conversations/conversations.service';
 import { ToolRegistryService } from '../tools/tool-registry.service';
 import { N8nService } from '../n8n/n8n.service';
+import { UsersService } from '../users/users.service';
+
 function getLocalISOString(date: Date = new Date()): string {
   const tzo = -date.getTimezoneOffset();
   const dif = tzo >= 0 ? '+' : '-';
