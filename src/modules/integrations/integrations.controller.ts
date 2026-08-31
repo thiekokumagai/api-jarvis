@@ -16,6 +16,11 @@ export class IntegrationsController {
     return this.integrationsService.getUserIntegrations(userId);
   }
 
+  @Get('google/url')
+  async getGoogleAuthUrl() {
+    return this.integrationsService.getGoogleAuthUrl();
+  }
+
   @Post('google/connect')
   async connectGoogle(@CurrentUser('userId') userId: string, @Body() body: { code?: string }) {
     return this.integrationsService.connectGoogle(userId, body?.code);
@@ -36,3 +41,4 @@ export class IntegrationsController {
     return this.integrationsService.disconnectWhatsApp(userId);
   }
 }
+
