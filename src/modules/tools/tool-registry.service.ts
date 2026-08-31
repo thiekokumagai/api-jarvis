@@ -4,18 +4,26 @@ import { Tool, ToolContext } from './tool.interface';
 import { CalendarCreateEventTool, CalendarListEventsTool } from './mocks/calendar.tool';
 import { ContactsSearchTool } from './mocks/contacts.tool';
 import { WhatsAppSendMessageTool } from './mocks/whatsapp.tool';
+import { ReminderCreateTool, ReminderListTool, ReminderDeleteTool } from './reminders.tool';
+import { RemindersService } from '../reminders/reminders.service';
 
 @Injectable()
 export class ToolRegistryService implements OnModuleInit {
   private readonly tools = new Map<string, Tool>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly remindersService: RemindersService,
+  ) {}
 
   onModuleInit() {
     this.registerTool(new CalendarCreateEventTool());
     this.registerTool(new CalendarListEventsTool());
     this.registerTool(new ContactsSearchTool());
     this.registerTool(new WhatsAppSendMessageTool());
+    this.registerTool(new ReminderCreateTool(this.remindersService));
+    this.registerTool(new ReminderListTool(this.remindersService));
+    this.registerTool(new ReminderDeleteTool(this.remindersService));
   }
 
   registerTool(tool: Tool) {

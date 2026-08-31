@@ -68,7 +68,34 @@ export class AssistantService {
     if (!replyText) {
       const textLower = messageText.toLowerCase();
 
-      if (textLower.includes('agende') || textLower.includes('agendar') || textLower.includes('marcar')) {
+      if (textLower.includes('lembra') || textLower.includes('lembrete') || textLower.includes('lembrar')) {
+        // Parse time & title for reminder
+        let remindAtDate = new Date(Date.now() + 60 * 1000); // default 1 minute from now
+        if (textLower.includes('amanhã')) {
+          remindAtDate = new Date();
+          remindAtDate.setDate(remindAtDate.getDate() + 1);
+          remindAtDate.setHours(9, 0, 0, 0);
+        }
+
+        // Try extracting time like "às 14" or "às 9:30"
+        const timeMatch = textLower.match(/às\s+(\d{1,2})(?::(\d{2}))?/i);
+        if (timeMatch) {
+          const hours = parseInt(timeMatch[1], 10);
+          const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+          remindAtDate.setHours(hours, minutes, 0, 0);
+        }
+
+        const titleMatch = messageText.match(/(?:lembra|lembrete|lembrar)(?:\s+de|\s+que|\s+para)?\s+(.+)/i);
+        const title = titleMatch ? titleMatch[1].trim() : messageText;
+
+        const result = await this.toolRegistryService.executeTool(userId, 'reminder.create', {
+          title,
+          remindAt: remindAtDate.toISOString(),
+          channel: 'PUSH',
+        });
+        executedTools.push({ tool: 'reminder.create', result });
+        replyText = `Compreendido, senhor. ${result.message || `Lembrete agendado com sucesso para ${remindAtDate.toLocaleString('pt-BR')}.`}`;
+      } else if (textLower.includes('agende') || textLower.includes('agendar') || textLower.includes('marcar')) {
         const result = await this.toolRegistryService.executeTool(userId, 'calendar.create_event', {
           title: messageText,
           start: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),

@@ -10,6 +10,7 @@ import { ToolsModule } from './modules/tools/tools.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { AssistantModule } from './modules/assistant/assistant.module';
 import { N8nModule } from './modules/n8n/n8n.module';
+import { RemindersModule } from './modules/reminders/reminders.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { N8nModule } from './modules/n8n/n8n.module';
     ConversationsModule,
     AssistantModule,
     N8nModule,
+    RemindersModule,
   ],
 })
 export class AppModule {}
