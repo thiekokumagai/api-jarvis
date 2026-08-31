@@ -1,8 +1,11 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ConversationsService } from './conversations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@ApiTags('Conversations')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('conversations')
 export class ConversationsController {

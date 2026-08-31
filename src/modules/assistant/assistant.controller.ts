@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AssistantService } from './assistant.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -14,6 +15,8 @@ export class ProcessMessageDto {
   conversationId?: string;
 }
 
+@ApiTags('Assistant')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('assistant')
 export class AssistantController {
