@@ -16,6 +16,17 @@ export class ConversationsController {
     return this.conversationsService.getUserConversations(userId);
   }
 
+  @Get('active')
+  async getActiveConversation(@CurrentUser('userId') userId: string) {
+    const conversation = await this.conversationsService.getOrCreateActiveConversation(userId);
+    const messages = await this.conversationsService.getMessages(userId, conversation.id);
+    return {
+      conversationId: conversation.id,
+      title: conversation.title,
+      messages,
+    };
+  }
+
   @Get(':id/messages')
   async getMessages(
     @CurrentUser('userId') userId: string,
