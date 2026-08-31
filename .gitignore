@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build & Dist
+dist/
+
+# Environment files
+.env
+.env.local
+!.env.example
+!.env-example
+
+# Logs & Temp
+*.log
