@@ -42,8 +42,19 @@ export class AssistantService {
     // 1. Get or create conversation
     const conversation = await this.conversationsService.getOrCreateActiveConversation(userId, conversationId);
 
+    // Fetch previous conversation history for full context awareness
+    const historyMessages = await this.conversationsService.getMessages(userId, conversation.id);
+
     // 2. Persist user message
     await this.conversationsService.addMessage(conversation.id, 'user', messageText);
+
+    // Format previous messages for OpenAI context (take last 14 messages)
+    const historyFormatted: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = historyMessages
+      .slice(-14)
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content,
+      }));
 
     let replyText = '';
     const executedTools: Array<{ tool: string; result: any }> = [];
@@ -133,18 +144,24 @@ export class AssistantService {
       },
     ];
 
-    const systemPrompt = `Você é o J.A.R.V.I.S., um assistente pessoal inteligente, refinado, caloroso e extremamente eficiente. Trate o usuário obrigatoriamente pelo seu nome (${firstName}) em vez de usar "senhor" ou "senhora". Responda de forma totalmente natural, humana, fluida e agradável para síntese de voz (evite termos robóticos mecânicos como "sistemas operacionais" ou "compreendido"). Se o usuário pedir para criar ou agendar um lembrete, compromisso, mensagem ou buscar contatos, você DEVE obrigatoriamente invocar a ferramenta correspondente. A data e hora atual do sistema é ${new Date().toISOString()}.`;
+    const systemPrompt = `Você é o J.A.R.V.I.S., o assistente pessoal inteligente, refinado e eficiente. Trate o usuário pelo nome (${firstName}) em vez de usar "senhor" ou "senhora". 
+ATENÇÃO: Você possui integração direta com o banco de dados do sistema! SEMPRE que o usuário pedir para criar, agendar ou colocar um lembrete (ex: "comprar carne amanhã às 15h"), você DEVE obrigatoriamente invocar a ferramenta (tool) 'reminder_create'. NUNCA diga que não tem capacidade de marcar lembretes ou que o usuário deve usar outro aplicativo.
+Mantenha a memória e o contexto de todas as mensagens anteriores enviadas nesta conversa.
+A data e hora atual do sistema é ${new Date().toISOString()}.`;
+
+    const openAiMessagesPayload: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      ...historyFormatted,
+      { role: 'user', content: messageText },
+    ];
 
     const openai = this.getOpenAIClient();
     if (openai) {
       try {
-        this.logger.log('Processando mensagem via OpenAI API com Function Calling...');
+        this.logger.log('Processando mensagem via OpenAI API com histórico e Function Calling...');
         const response = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: messageText },
-          ],
+          messages: openAiMessagesPayload,
           tools: openAiTools,
           tool_choice: 'auto',
           temperature: 0.7,
@@ -173,8 +190,7 @@ export class AssistantService {
             const followUp = await openai.chat.completions.create({
               model: 'gpt-4o-mini',
               messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: messageText },
+                ...openAiMessagesPayload,
                 choiceMessage,
                 {
                   role: 'tool',
