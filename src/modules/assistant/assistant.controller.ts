@@ -13,6 +13,14 @@ export class ProcessMessageDto {
   @IsString()
   @IsOptional()
   conversationId?: string;
+
+  @IsString()
+  @IsOptional()
+  userTimeZone?: string;
+
+  @IsString()
+  @IsOptional()
+  userLocalTimeStr?: string;
 }
 
 @ApiTags('Assistant')
@@ -27,6 +35,12 @@ export class AssistantController {
     @CurrentUser('userId') userId: string,
     @Body() dto: ProcessMessageDto,
   ) {
-    return this.assistantService.processMessage(userId, dto.message, dto.conversationId);
+    return this.assistantService.processMessage(
+      userId,
+      dto.message,
+      dto.conversationId,
+      dto.userTimeZone,
+      dto.userLocalTimeStr,
+    );
   }
 }

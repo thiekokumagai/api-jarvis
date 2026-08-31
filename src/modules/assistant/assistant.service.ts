@@ -49,7 +49,13 @@ export class AssistantService {
     return null;
   }
 
-  async processMessage(userId: string, messageText: string, conversationId?: string) {
+  async processMessage(
+    userId: string,
+    messageText: string,
+    conversationId?: string,
+    userTimeZone?: string,
+    userLocalTimeStr?: string,
+  ) {
     // 0. Fetch user registered name
     let userName = 'Usuário';
     try {
@@ -167,20 +173,19 @@ export class AssistantService {
       },
     ];
 
+    const userTz = userTimeZone || 'America/Sao_Paulo';
     const now = new Date();
-    const localFormatted = now.toLocaleString('pt-BR', {
-      dateStyle: 'full',
-      timeStyle: 'medium',
-    });
+    const localFormatted = userLocalTimeStr || now.toLocaleString('pt-BR', { timeZone: userTz });
     const localISO = getLocalISOString(now);
 
     const systemPrompt = `Você é o J.A.R.V.I.S., o assistente pessoal inteligente, refinado e eficiente. Trate o usuário pelo nome (${firstName}) em vez de usar "senhor" ou "senhora". 
-ATENÇÃO CRÍTICA DE FUSO HORÁRIO E DATA LOCAL:
-- O fuso horário do usuário é o horário oficial do Brasil.
-- A data e hora atual LOCAL do usuário no Brasil é: ${localFormatted} (formato ISO local: ${localISO}).
-- Sempre que o usuário solicitar um lembrete ou compromisso relativo (ex: "daqui 15 minutos", "em 1 hora", "às 15h", "amanhã"), você DEVE calcular o horário a partir dessa data e hora LOCAL (${localFormatted}).
-- Ao chamar a ferramenta 'reminder_create', passe a data e hora em formato ISO local (${localISO}) ou no fuso correto.
-- Na sua resposta de confirmação em texto, informe SEMPRE o horário no fuso horário LOCAL do usuário.
+ATENÇÃO CRÍTICA DE FUSO HORÁRIO E DATA LOCAL DO DISPOSITIVO DO USUÁRIO:
+- O fuso horário do dispositivo do usuário é: ${userTz}.
+- A data e hora atual LOCAL no relógio do usuário é: ${localFormatted}.
+- Sempre que o usuário solicitar um lembrete ou compromisso relativo (ex: "daqui 15 minutos", "em 1 hora", "às 15h", "amanhã"), você DEVE obrigatoriamente calcular o horário a partir dessa hora LOCAL (${localFormatted}). Exemplo: se no relógio do usuário é 14:19 e ele pede "daqui a 15 minutos", o horário resultante é exatamente 14:34!
+- Ao chamar a ferramenta 'reminder_create', passe a data e hora em formato ISO referente ao fuso do usuário (${localISO}).
+- Na sua resposta em texto de confirmação, cite SEMPRE o horário exatamente idêntico ao que aparece no relógio LOCAL do usuário (${localFormatted}).
+- NUNCA use o fuso horário UTC global (+4h a mais).
 - Você possui integração direta com o banco de dados do sistema! SEMPRE que o usuário pedir para criar, agendar ou colocar um lembrete, você DEVE obrigatoriamente invocar a ferramenta (tool) 'reminder_create'. NUNCA diga que não tem capacidade de marcar lembretes ou que o usuário deve usar outro aplicativo.
 Mantenha a memória e o contexto de todas as mensagens anteriores enviadas nesta conversa.`;
 
