@@ -4,7 +4,28 @@ import OpenAI from 'openai';
 import { ConversationsService } from '../conversations/conversations.service';
 import { ToolRegistryService } from '../tools/tool-registry.service';
 import { N8nService } from '../n8n/n8n.service';
-import { UsersService } from '../users/users.service';
+function getLocalISOString(date: Date = new Date()): string {
+  const tzo = -date.getTimezoneOffset();
+  const dif = tzo >= 0 ? '+' : '-';
+  const pad = (num: number) => (num < 10 ? '0' : '') + num;
+  return (
+    date.getFullYear() +
+    '-' +
+    pad(date.getMonth() + 1) +
+    '-' +
+    pad(date.getDate()) +
+    'T' +
+    pad(date.getHours()) +
+    ':' +
+    pad(date.getMinutes()) +
+    ':' +
+    pad(date.getSeconds()) +
+    dif +
+    pad(Math.floor(Math.abs(tzo) / 60)) +
+    ':' +
+    pad(Math.abs(tzo) % 60)
+  );
+}
 
 @Injectable()
 export class AssistantService {
@@ -144,10 +165,22 @@ export class AssistantService {
       },
     ];
 
+    const now = new Date();
+    const localFormatted = now.toLocaleString('pt-BR', {
+      dateStyle: 'full',
+      timeStyle: 'medium',
+    });
+    const localISO = getLocalISOString(now);
+
     const systemPrompt = `Você é o J.A.R.V.I.S., o assistente pessoal inteligente, refinado e eficiente. Trate o usuário pelo nome (${firstName}) em vez de usar "senhor" ou "senhora". 
-ATENÇÃO: Você possui integração direta com o banco de dados do sistema! SEMPRE que o usuário pedir para criar, agendar ou colocar um lembrete (ex: "comprar carne amanhã às 15h"), você DEVE obrigatoriamente invocar a ferramenta (tool) 'reminder_create'. NUNCA diga que não tem capacidade de marcar lembretes ou que o usuário deve usar outro aplicativo.
-Mantenha a memória e o contexto de todas as mensagens anteriores enviadas nesta conversa.
-A data e hora atual do sistema é ${new Date().toISOString()}.`;
+ATENÇÃO CRÍTICA DE FUSO HORÁRIO E DATA LOCAL:
+- O fuso horário do usuário é o horário oficial do Brasil.
+- A data e hora atual LOCAL do usuário no Brasil é: ${localFormatted} (formato ISO local: ${localISO}).
+- Sempre que o usuário solicitar um lembrete ou compromisso relativo (ex: "daqui 15 minutos", "em 1 hora", "às 15h", "amanhã"), você DEVE calcular o horário a partir dessa data e hora LOCAL (${localFormatted}).
+- Ao chamar a ferramenta 'reminder_create', passe a data e hora em formato ISO local (${localISO}) ou no fuso correto.
+- Na sua resposta de confirmação em texto, informe SEMPRE o horário no fuso horário LOCAL do usuário.
+- Você possui integração direta com o banco de dados do sistema! SEMPRE que o usuário pedir para criar, agendar ou colocar um lembrete, você DEVE obrigatoriamente invocar a ferramenta (tool) 'reminder_create'. NUNCA diga que não tem capacidade de marcar lembretes ou que o usuário deve usar outro aplicativo.
+Mantenha a memória e o contexto de todas as mensagens anteriores enviadas nesta conversa.`;
 
     const openAiMessagesPayload: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
